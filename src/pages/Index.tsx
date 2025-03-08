@@ -7,11 +7,6 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-huemate-cream to-white flex flex-col items-center justify-center p-6 sm:p-10">
       <div className="w-full max-w-4xl mx-auto text-center">
         <div className="mb-10 animate-float">
-          <img 
-            src="/lovable-uploads/e7c7a034-8f23-408d-89b4-7d447102a958.png" 
-            alt="HueMate" 
-            className="w-40 h-40 mx-auto mb-6"
-          />
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-display font-medium mb-4 text-huemate-dark">
             <span className="text-shimmer">HueMate</span>
           </h1>

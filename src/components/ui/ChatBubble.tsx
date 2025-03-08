@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 import { X, MessageCircle } from 'lucide-react';
 
@@ -46,13 +46,13 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       ) : (
         <button
           onClick={onToggle}
-          className="w-16 h-16 rounded-full bg-gradient-to-r from-huemate-gold to-huemate-accent shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+          className="w-20 h-20 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 overflow-hidden"
         >
-          <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-huemate-gold to-huemate-accent flex items-center justify-center animate-pulse-soft">
-              <MessageCircle className="w-6 h-6 text-white" />
-            </div>
-          </div>
+          <img 
+            src="/lovable-uploads/e7c7a034-8f23-408d-89b4-7d447102a958.png" 
+            alt="HueMate" 
+            className="w-full h-full object-cover"
+          />
         </button>
       )}
     </div>
