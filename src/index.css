@@ -124,3 +124,28 @@
     @apply rounded-2xl rounded-br-none px-4 py-3 bg-huemate-gold/30 backdrop-blur-md border border-huemate-gold/50 text-huemate-dark;
   }
 }
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes subtle-shimmer {
+  0% {
+    box-shadow: 0 0 5px rgba(230, 209, 162, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(230, 209, 162, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(230, 209, 162, 0.5);
+  }
+}
+
+.animate-subtle-shimmer {
+  animation: subtle-shimmer 3s ease-in-out infinite;
+}

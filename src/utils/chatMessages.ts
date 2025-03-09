@@ -1,4 +1,3 @@
-
 import { MessageType } from '@/components/MessageItem';
 
 // Demo placeholder images
@@ -34,9 +33,9 @@ export const getInitialMessages = (): MessageType[] => [
     timestamp: new Date(),
     actions: [
       {
-        id: 'upload-photo',
-        label: "Try outfits on my photo",
-        action: 'START'
+        id: 'take-photo',
+        label: "Take a picture now",
+        action: 'TAKE_PHOTO'
       },
       {
         id: 'camera',
@@ -54,6 +53,125 @@ export const getResponseForAction = (
   clothingPhoto?: string
 ): MessageType => {
   switch (action) {
+    case 'TAKE_PHOTO':
+    case 'LIVE_EXPERIENCE':
+      return {
+        id: Date.now().toString(),
+        content: "Hey gorgeous! Want to discover colors and outfits that will make you glow? Let's start by capturing a pic of you! (Don't worry! Your picture is not stored or misused.)",
+        sender: 'bot',
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'capture-photo',
+            label: "Capture a photo",
+            action: 'CAPTURE_PHOTO'
+          }
+        ]
+      };
+      
+    case 'CAPTURE_PHOTO':
+      return {
+        id: Date.now().toString(),
+        content: "Got it! I can now analyze your skin tone. Let's find the shades that'll turn heads for you!",
+        sender: 'bot',
+        timestamp: new Date(),
+        image: userPhoto || DEMO_IMAGES.userPhoto,
+        actions: [
+          {
+            id: 'analyze-body-shape',
+            label: "Continue to body shape",
+            action: 'BODY_SHAPE'
+          }
+        ]
+      };
+      
+    case 'BODY_SHAPE':
+      return {
+        id: Date.now().toString(),
+        content: "To make your outfit suggestion even more accurate, may I know your body type?",
+        sender: 'bot',
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'slim',
+            label: "Slim",
+            action: 'BODY_SLIM'
+          },
+          {
+            id: 'curvy',
+            label: "Curvy",
+            action: 'BODY_CURVY'
+          },
+          {
+            id: 'plus',
+            label: "Plus Size",
+            action: 'BODY_PLUS'
+          },
+          {
+            id: 'athletic',
+            label: "Athletic",
+            action: 'BODY_ATHLETIC'
+          },
+          {
+            id: 'hourglass',
+            label: "Hourglass",
+            action: 'BODY_HOURGLASS'
+          }
+        ]
+      };
+    
+    case 'BODY_SLIM':
+    case 'BODY_CURVY':
+    case 'BODY_PLUS':
+    case 'BODY_ATHLETIC':
+    case 'BODY_HOURGLASS':
+      return {
+        id: Date.now().toString(),
+        content: "Great! And how do you identify?",
+        sender: 'bot',
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'female',
+            label: "Female",
+            action: 'GENDER_FEMALE'
+          },
+          {
+            id: 'male',
+            label: "Male",
+            action: 'GENDER_MALE'
+          },
+          {
+            id: 'transgender',
+            label: "Transgender",
+            action: 'GENDER_TRANSGENDER'
+          },
+          {
+            id: 'no-say',
+            label: "Prefer not to say",
+            action: 'GENDER_NOTSAY'
+          }
+        ]
+      };
+      
+    case 'GENDER_FEMALE':
+    case 'GENDER_MALE':
+    case 'GENDER_TRANSGENDER':
+    case 'GENDER_NOTSAY':
+      return {
+        id: Date.now().toString(),
+        content: "Perfect! Now, let's find the perfect shades and outfits for you.",
+        sender: 'bot',
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'start',
+            label: "Start",
+            action: 'START'
+          }
+        ]
+      };
+      
     case 'START':
       return {
         id: Date.now().toString(),

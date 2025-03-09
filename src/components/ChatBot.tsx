@@ -4,18 +4,19 @@ import ChatBubble from './ui/ChatBubble';
 import MessageItem, { MessageType } from './MessageItem';
 import PhotoUploader from './PhotoUploader';
 import ActionButton from './ActionButton';
-import { Send } from 'lucide-react';
+import { Camera, Send } from 'lucide-react';
 import { getInitialMessages, getResponseForAction } from '@/utils/chatMessages';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<MessageType[]>(getInitialMessages());
   const [inputValue, setInputValue] = useState('');
-  const [awaitingPhotoUpload, setAwaitingPhotoUpload] = useState(false);
-  const [awaitingClothingUpload, setAwaitingClothingUpload] = useState(false);
+  const [awaitingCameraCapture, setAwaitingCameraCapture] = useState(false);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [clothingPhoto, setClothingPhoto] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
@@ -29,32 +30,60 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleActionClick = (action: string) => {
-    // Add a slight delay to simulate processing
-    setTimeout(() => {
-      if (action === 'START') {
-        setAwaitingPhotoUpload(true);
-      } else if (action === 'PHOTO_UPLOADED') {
-        setAwaitingPhotoUpload(false);
-        setAwaitingClothingUpload(true);
-      } else if (action === 'CLOTHING_UPLOADED') {
-        setAwaitingClothingUpload(false);
-        // Simulate processing time for try-on
-        setTimeout(() => {
-          addBotMessage(getResponseForAction('TRY_ON_COMPLETE'));
-        }, 1500);
-      }
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' } 
+      });
       
-      addBotMessage(getResponseForAction(action, userPhoto || undefined, clothingPhoto || undefined));
-    }, 500);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setAwaitingCameraCapture(true);
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      // Add a fallback message if camera access fails
+      addBotMessage({
+        id: Date.now().toString(),
+        content: "I couldn't access your camera. Please make sure you've given permission for camera access.",
+        sender: 'bot',
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'try-again',
+            label: "Try again",
+            action: 'TAKE_PHOTO'
+          }
+        ]
+      });
+    }
   };
 
-  const handleUserPhotoUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        const photoUrl = e.target.result as string;
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Draw video frame to canvas
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert canvas to data URL
+        const photoUrl = canvas.toDataURL('image/jpeg');
         setUserPhoto(photoUrl);
+        
+        // Stop all video streams
+        const stream = video.srcObject as MediaStream;
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+        video.srcObject = null;
+        setAwaitingCameraCapture(false);
         
         // Add user message with the photo
         const userMessage: MessageType = {
@@ -68,45 +97,25 @@ const ChatBot = () => {
         
         // Simulate processing time
         setTimeout(() => {
-          addBotMessage(getResponseForAction('PHOTO_UPLOADED', photoUrl));
-          setAwaitingPhotoUpload(false);
-          setAwaitingClothingUpload(true);
+          addBotMessage(getResponseForAction('CAPTURE_PHOTO', photoUrl));
         }, 1000);
       }
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
-  const handleClothingPhotoUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        const photoUrl = e.target.result as string;
-        setClothingPhoto(photoUrl);
-        
-        // Add user message with the clothing photo
-        const userMessage: MessageType = {
-          id: Date.now().toString(),
-          content: "I'd like to try this on!",
-          sender: 'user',
-          timestamp: new Date(),
-          image: photoUrl
-        };
-        setMessages(prev => [...prev, userMessage]);
-        
-        // Simulate processing time
-        setTimeout(() => {
-          addBotMessage(getResponseForAction('CLOTHING_UPLOADED', undefined, photoUrl));
-          setAwaitingClothingUpload(false);
-          
-          // Simulate processing time for try-on
-          setTimeout(() => {
-            addBotMessage(getResponseForAction('TRY_ON_COMPLETE'));
-          }, 1500);
-        }, 1000);
+  const handleActionClick = (action: string) => {
+    // Add a slight delay to simulate processing
+    setTimeout(() => {
+      if (action === 'TAKE_PHOTO' || action === 'LIVE_EXPERIENCE') {
+        addBotMessage(getResponseForAction(action));
+        startCamera();
+      } else if (action === 'CAPTURE_PHOTO') {
+        capturePhoto();
+      } else {
+        // Handle all other actions
+        addBotMessage(getResponseForAction(action, userPhoto || undefined, clothingPhoto || undefined));
       }
-    };
-    reader.readAsDataURL(file);
+    }, 500);
   };
 
   const handleSendMessage = () => {
@@ -125,13 +134,35 @@ const ChatBot = () => {
     // Check for specific user messages
     const lowerCaseInput = inputValue.toLowerCase();
     
-    if (lowerCaseInput.includes('blue jeans') && lowerCaseInput.includes('already have')) {
+    if (lowerCaseInput.includes('blue jean') && lowerCaseInput.includes('already have')) {
       setTimeout(() => {
         addBotMessage(getResponseForAction('HAVE_JEANS'));
       }, 1000);
-    } else if (lowerCaseInput.includes('don\'t want') && lowerCaseInput.includes('bottom')) {
+    } else if (lowerCaseInput.includes('budget')) {
       setTimeout(() => {
-        addBotMessage(getResponseForAction('NO_BOTTOMS'));
+        addBotMessage({
+          id: Date.now().toString(),
+          content: "Planning an outing or event? I can style you from head to toe within your budget!",
+          sender: 'bot',
+          timestamp: new Date(),
+          actions: [
+            {
+              id: 'budget-1000',
+              label: "₹1000",
+              action: 'BUDGET_1000'
+            },
+            {
+              id: 'budget-2000',
+              label: "₹2000",
+              action: 'BUDGET_2000'
+            },
+            {
+              id: 'budget-5000',
+              label: "₹5000",
+              action: 'BUDGET_5000'
+            }
+          ]
+        });
       }, 1000);
     } else {
       // Default response
@@ -178,15 +209,29 @@ const ChatBot = () => {
         </div>
         
         <div className="p-4 border-t border-huemate-gold/20">
-          {awaitingPhotoUpload && (
+          {awaitingCameraCapture && (
             <div className="mb-4">
-              <PhotoUploader onPhotoSelected={handleUserPhotoUpload} variant="user" />
-            </div>
-          )}
-          
-          {awaitingClothingUpload && (
-            <div className="mb-4">
-              <PhotoUploader onPhotoSelected={handleClothingPhotoUpload} variant="clothing" />
+              <div className="relative w-full rounded-xl overflow-hidden bg-black">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-64 object-cover"
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                  <button
+                    onClick={capturePhoto}
+                    className="p-3 bg-white rounded-full shadow-lg"
+                  >
+                    <Camera className="w-6 h-6 text-huemate-dark" />
+                  </button>
+                </div>
+                <p className="absolute top-2 left-0 right-0 text-center text-white text-xs bg-black/50 py-1">
+                  Your picture is not stored or misused
+                </p>
+              </div>
             </div>
           )}
           

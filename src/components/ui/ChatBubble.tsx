@@ -15,7 +15,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   children
 }) => {
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-12 right-12 z-50 flex flex-col items-end">
       {isOpen ? (
         <div className="w-[380px] h-[600px] bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden border border-huemate-gold/30 animate-scale-up">
           <div className="w-full h-full flex flex-col">
@@ -30,7 +30,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 </div>
                 <div className="ml-2">
                   <h3 className="text-lg font-display font-medium text-huemate-dark">HueMate</h3>
-                  <p className="text-xs text-huemate-dark/70">Your AI Fashion Stylist</p>
+                  <p className="text-xs text-huemate-dark/70">Your Perfect Shade, Every Time</p>
                 </div>
               </div>
               <button 
@@ -48,7 +48,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       ) : (
         <button
           onClick={onToggle}
-          className="w-24 h-24 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 overflow-hidden"
+          className="w-24 h-24 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 overflow-hidden animate-subtle-shimmer"
         >
           <img 
             src="/lovable-uploads/e7c7a034-8f23-408d-89b4-7d447102a958.png" 
