@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { X, MessageCircle } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface ChatBubbleProps {
   isOpen: boolean;
@@ -21,14 +21,16 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
           <div className="w-full h-full flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-huemate-gold/20">
               <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-huemate-gold to-huemate-accent flex items-center justify-center">
-                  <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-r from-huemate-gold to-huemate-accent animate-pulse-soft" />
-                  </div>
+                <div className="w-10 h-10 rounded-full overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/e7c7a034-8f23-408d-89b4-7d447102a958.png" 
+                    alt="HueMate" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="ml-2">
                   <h3 className="text-lg font-display font-medium text-huemate-dark">HueMate</h3>
-                  <p className="text-xs text-huemate-dark/70">Your Perfect Shade, Every Time</p>
+                  <p className="text-xs text-huemate-dark/70">Your AI Fashion Stylist</p>
                 </div>
               </div>
               <button 
@@ -46,7 +48,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       ) : (
         <button
           onClick={onToggle}
-          className="w-20 h-20 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 overflow-hidden"
+          className="w-24 h-24 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 overflow-hidden"
         >
           <img 
             src="/lovable-uploads/e7c7a034-8f23-408d-89b4-7d447102a958.png" 

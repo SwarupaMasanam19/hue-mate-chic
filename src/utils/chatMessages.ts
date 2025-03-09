@@ -17,14 +17,31 @@ const DEMO_IMAGES = {
 export const getInitialMessages = (): MessageType[] => [
   {
     id: '1',
-    content: "Hey there, gorgeous! Ready to find your perfect shade?",
+    content: "Hey there! 😎 Ready to discover some jaw-dropping outfits that'll make you shine like never before?",
+    sender: 'bot',
+    timestamp: new Date()
+  },
+  {
+    id: '2',
+    content: "I'm HueMate, your AI Fashion Stylist! 💅\nI'll help you find the perfect shades, fabrics, and outfits that match your unique personality and skin tone.",
+    sender: 'bot',
+    timestamp: new Date()
+  },
+  {
+    id: '3',
+    content: "So tell me — how do you wanna do this today? 😉",
     sender: 'bot',
     timestamp: new Date(),
     actions: [
       {
-        id: 'start',
-        label: "Let's get started!",
+        id: 'upload-photo',
+        label: "Try outfits on my photo",
         action: 'START'
+      },
+      {
+        id: 'camera',
+        label: "Live try-on experience",
+        action: 'LIVE_EXPERIENCE'
       }
     ]
   }
@@ -40,7 +57,15 @@ export const getResponseForAction = (
     case 'START':
       return {
         id: Date.now().toString(),
-        content: "Ooooh! I can't wait to make you slay today! First, upload a photo so I can analyze your skin tone.",
+        content: "Ooooh! I already see some killer potential in you. 🔥\nLemme do my magic and style you up in some fabulous outfits, cool?",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      
+    case 'LIVE_EXPERIENCE':
+      return {
+        id: Date.now().toString(),
+        content: "Awesome! For the live experience, let's start with a photo upload first, then we can explore some real-time options!",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -48,7 +73,7 @@ export const getResponseForAction = (
     case 'PHOTO_UPLOADED':
       return {
         id: Date.now().toString(),
-        content: "OMG! Your skin tone is radiant — perfect for warm shades like coral, pastel, and rose pink! Want me to recommend a perfect outfit? Upload a dress or shirt now!",
+        content: "Ahh, I love the energy you're bringing! 💅\nI'll pull out some perfect shades and fits for you. Hang tight!",
         sender: 'bot',
         timestamp: new Date(),
         image: userPhoto || DEMO_IMAGES.userPhoto
@@ -57,7 +82,7 @@ export const getResponseForAction = (
     case 'CLOTHING_UPLOADED':
       return {
         id: Date.now().toString(),
-        content: "Okay, darling! Trying this on you... hold on!",
+        content: "Let me work my styling magic! Just a moment while I create the perfect look...",
         sender: 'bot',
         timestamp: new Date(),
         image: clothingPhoto || DEMO_IMAGES.clothing1
@@ -66,65 +91,90 @@ export const getResponseForAction = (
     case 'TRY_ON_COMPLETE':
       return {
         id: Date.now().toString(),
-        content: "Aaaand BAM! 🔥 This outfit on you is PERFECTION!",
+        content: "Daaayum! 😎 This look is absolutely FIRE on you!\nBut wait — I can level this up even more. Wanna add a bottom, accessory, or some killer shoes?",
         sender: 'bot',
         timestamp: new Date(),
         image: DEMO_IMAGES.outfit1,
         actions: [
           {
-            id: 'explore',
-            label: "Explore similar outfits",
-            action: 'EXPLORE_SIMILAR'
+            id: 'full-look',
+            label: "Yes, style me a full look",
+            action: 'STYLE_FULL_LOOK'
           },
           {
-            id: 'match',
-            label: "Match with accessories",
-            action: 'MATCH_ACCESSORIES'
+            id: 'own-mind',
+            label: "Nah, I already have something in mind",
+            action: 'OWN_MIND'
           }
         ]
       };
       
-    case 'EXPLORE_SIMILAR':
+    case 'STYLE_FULL_LOOK':
       return {
         id: Date.now().toString(),
-        content: "Here are some similar outfits that would look absolutely stunning on you!",
+        content: "You're about to become a whole fashion moment! Here are some complete looks that would be absolutely stunning on you:",
         sender: 'bot',
         timestamp: new Date(),
         recommendations: {
-          type: 'Similar Outfits',
+          type: 'Complete Looks',
           items: [
             {
               id: 'outfit1',
-              name: 'Summer Floral Dress',
+              name: 'Bold & Stylish',
               image: DEMO_IMAGES.outfit1
             },
             {
               id: 'outfit2',
-              name: 'Elegant Blouse & Skirt',
+              name: 'Effortlessly Chic',
               image: DEMO_IMAGES.outfit2
             },
             {
               id: 'outfit3',
-              name: 'Casual Top & Jeans',
+              name: 'Modern Classic',
               image: DEMO_IMAGES.clothing2
             },
             {
               id: 'outfit4',
-              name: 'Evening Ensemble',
+              name: 'Statement Style',
               image: DEMO_IMAGES.clothing1
             }
           ]
         },
         actions: [
           {
-            id: 'buy',
-            label: "Buy Now",
-            action: 'BUY_NOW'
+            id: 'save',
+            label: "Save This Look",
+            action: 'SAVE_LOOK'
           },
           {
             id: 'try_more',
-            label: "Try More Clothes",
+            label: "Find Me Another Fit",
             action: 'TRY_MORE'
+          }
+        ]
+      };
+      
+    case 'OWN_MIND':
+      return {
+        id: Date.now().toString(),
+        content: "Tell me what you already have! Blue jeans? Black pants? A favorite jacket?",
+        sender: 'bot',
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'blue_jeans',
+            label: "I have blue jeans",
+            action: 'HAVE_JEANS'
+          },
+          {
+            id: 'black_pants',
+            label: "I have black pants",
+            action: 'HAVE_BLACK_PANTS'
+          },
+          {
+            id: 'something_else',
+            label: "Something else",
+            action: 'HAVE_SOMETHING_ELSE'
           }
         ]
       };
@@ -132,20 +182,20 @@ export const getResponseForAction = (
     case 'MATCH_ACCESSORIES':
       return {
         id: Date.now().toString(),
-        content: "Okayyy! Matching your style with these gorgeous accessories would make you POP! 💙",
+        content: "These accessories would take your style to a whole new level! 💯",
         sender: 'bot',
         timestamp: new Date(),
         recommendations: {
-          type: 'Perfect Accessories',
+          type: 'Statement Accessories',
           items: [
             {
               id: 'acc1',
-              name: 'Gold Statement Earrings',
+              name: 'Gold Statement Pieces',
               image: DEMO_IMAGES.accessory1
             },
             {
               id: 'acc2',
-              name: 'Elegant Handbag',
+              name: 'Elegant Essentials',
               image: DEMO_IMAGES.accessory2
             }
           ]
@@ -157,9 +207,9 @@ export const getResponseForAction = (
             action: 'MATCH_BOTTOMS'
           },
           {
-            id: 'buy',
-            label: "Buy These",
-            action: 'BUY_NOW'
+            id: 'save',
+            label: "Save This Look",
+            action: 'SAVE_LOOK'
           }
         ]
       };
@@ -167,11 +217,11 @@ export const getResponseForAction = (
     case 'MATCH_BOTTOMS':
       return {
         id: Date.now().toString(),
-        content: "These bottoms would look amazing with your style!",
+        content: "These bottoms would create the perfect balance for your look:",
         sender: 'bot',
         timestamp: new Date(),
         recommendations: {
-          type: 'Complementary Bottoms',
+          type: 'Perfect Bottoms',
           items: [
             {
               id: 'bottom1',
@@ -180,7 +230,7 @@ export const getResponseForAction = (
             },
             {
               id: 'bottom2',
-              name: 'Elegant Skirt',
+              name: 'Elegant Statement Piece',
               image: DEMO_IMAGES.outfit2
             }
           ]
@@ -202,19 +252,61 @@ export const getResponseForAction = (
     case 'HAVE_JEANS':
       return {
         id: Date.now().toString(),
-        content: "Ooooh yes honey! Pairing your blue jeans with white or pastel pink would be FIRE 🔥! Would you like to see some accessories to complete the look?",
+        content: "Ouuu! 🔥 A classic blue jean, huh?\nIn that case, I'd say… a crisp white shirt + minimal sneakers + gold accessories = INSTANT 🔥 FIT.\n\nWanna see how it looks?",
         sender: 'bot',
         timestamp: new Date(),
         actions: [
           {
-            id: 'shoes',
-            label: "Show me shoes",
-            action: 'SHOW_SHOES'
+            id: 'show_look',
+            label: "Yes, show me the look",
+            action: 'SHOW_JEANS_LOOK'
           },
           {
-            id: 'bags',
-            label: "Show me bags",
-            action: 'SHOW_BAGS'
+            id: 'another',
+            label: "No, suggest another",
+            action: 'SUGGEST_ALTERNATIVE'
+          }
+        ]
+      };
+      
+    case 'HAVE_BLACK_PANTS':
+      return {
+        id: Date.now().toString(),
+        content: "Black pants are such a versatile staple! 💯\nI'd pair them with a bold colored top + statement accessories + sleek boots = absolute style icon vibes!\n\nShould I show you how this would look?",
+        sender: 'bot',
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'show_look',
+            label: "Yes, show me the look",
+            action: 'SHOW_PANTS_LOOK'
+          },
+          {
+            id: 'another',
+            label: "No, suggest another",
+            action: 'SUGGEST_ALTERNATIVE'
+          }
+        ]
+      };
+      
+    case 'SHOW_JEANS_LOOK':
+    case 'SHOW_PANTS_LOOK':
+      return {
+        id: Date.now().toString(),
+        content: "You're absolutely slaying this look! 💅\nThis outfit was MADE for you, trust me.",
+        sender: 'bot',
+        timestamp: new Date(),
+        image: DEMO_IMAGES.outfit1,
+        actions: [
+          {
+            id: 'save',
+            label: "Save This Look",
+            action: 'SAVE_LOOK'
+          },
+          {
+            id: 'try_more',
+            label: "Find Me Another Fit",
+            action: 'TRY_MORE'
           }
         ]
       };
@@ -222,33 +314,58 @@ export const getResponseForAction = (
     case 'NO_BOTTOMS':
       return {
         id: Date.now().toString(),
-        content: "I totally get it! This look is already stunning as is! Would you like to see some accessories to elevate it even more?",
+        content: "Got it! This look is already a style statement on its own. Would you like to add some accessories to really make it pop?",
         sender: 'bot',
         timestamp: new Date(),
         actions: [
           {
             id: 'accessories',
-            label: "Show accessories",
+            label: "Show me accessories",
             action: 'MATCH_ACCESSORIES'
           },
           {
-            id: 'checkout',
-            label: "Go to checkout",
-            action: 'BUY_NOW'
+            id: 'save',
+            label: "Save This Look",
+            action: 'SAVE_LOOK'
           }
         ]
       };
       
-    case 'BUY_NOW':
+    case 'SUGGEST_ALTERNATIVE':
       return {
         id: Date.now().toString(),
-        content: "Awww, you're gonna break hearts in this outfit! 💅🔥 I've added these items to your shopping bag. Anything else you'd like to explore today?",
+        content: "No problem! How about something with a bit more edge? Maybe:\n\n• A graphic tee + your jeans + a statement jacket\n• Or a monochrome look with layers and texture\n\nWhat's your vibe today?",
+        sender: 'bot',
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'classy',
+            label: "Show me something classy",
+            action: 'STYLE_CLASSY'
+          },
+          {
+            id: 'casual',
+            label: "Keep it casual and comfy",
+            action: 'STYLE_CASUAL'
+          },
+          {
+            id: 'icon',
+            label: "Make me look like a fashion icon",
+            action: 'STYLE_ICON'
+          }
+        ]
+      };
+      
+    case 'SAVE_LOOK':
+      return {
+        id: Date.now().toString(),
+        content: "Yassss! 💅 You're about to break some hearts with this look, trust me. 🔥\nWanna try another look or should we wrap things up?",
         sender: 'bot',
         timestamp: new Date(),
         actions: [
           {
             id: 'try_more',
-            label: "Try More Clothes",
+            label: "Find Me Another Fit",
             action: 'TRY_MORE'
           },
           {
@@ -259,18 +376,58 @@ export const getResponseForAction = (
         ]
       };
       
+    case 'STYLE_CLASSY':
+    case 'STYLE_CASUAL':
+    case 'STYLE_ICON':
+      return {
+        id: Date.now().toString(),
+        content: "Whoa! This is giving pure fashion icon vibes. 🔥\nWhy do I feel like you're about to break some hearts in this?",
+        sender: 'bot',
+        timestamp: new Date(),
+        image: action === 'STYLE_CASUAL' ? DEMO_IMAGES.clothing2 : DEMO_IMAGES.outfit2,
+        actions: [
+          {
+            id: 'save',
+            label: "Save This Look",
+            action: 'SAVE_LOOK'
+          },
+          {
+            id: 'try_more',
+            label: "Find Me Another Fit",
+            action: 'TRY_MORE'
+          }
+        ]
+      };
+      
     case 'TRY_MORE':
       return {
         id: Date.now().toString(),
-        content: "Yass! Let's find more stunning pieces for you! Upload another clothing item you'd like to try.",
+        content: "Let's find you another killer look! What kind of vibe are you going for now?",
         sender: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'classy',
+            label: "Show me something classy",
+            action: 'STYLE_CLASSY'
+          },
+          {
+            id: 'casual',
+            label: "Keep it casual and comfy",
+            action: 'STYLE_CASUAL'
+          },
+          {
+            id: 'icon',
+            label: "Make me look like a fashion icon",
+            action: 'STYLE_ICON'
+          }
+        ]
       };
       
     case 'END_SESSION':
       return {
         id: Date.now().toString(),
-        content: "Okay my queen, come back when you wanna SLAY again 💅💖. Your fashion journey awaits!",
+        content: "OMG, you're about to serve some serious looks! 😎\nDon't forget to tag me when you slay in these outfits, okay? 😉\n\nCatch you later, style icon! 💅",
         sender: 'bot',
         timestamp: new Date(),
         actions: [
@@ -285,9 +442,26 @@ export const getResponseForAction = (
     default:
       return {
         id: Date.now().toString(),
-        content: "OMG gurllll! I'm here to help you find your perfect style. What would you like to try next?",
+        content: "Hey, no pressure! Fashion is all about experimenting, you know? 😉\nIf you want, I can find something that's low-key, high fashion, or totally casual.",
         sender: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
+        actions: [
+          {
+            id: 'classy',
+            label: "Show me something classy",
+            action: 'STYLE_CLASSY'
+          },
+          {
+            id: 'casual',
+            label: "Keep it casual and comfy",
+            action: 'STYLE_CASUAL'
+          },
+          {
+            id: 'icon',
+            label: "Make me look like a fashion icon",
+            action: 'STYLE_ICON'
+          }
+        ]
       };
   }
 };
