@@ -2,10 +2,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ChatBubble from './ui/ChatBubble';
 import MessageItem, { MessageType } from './MessageItem';
-import PhotoUploader from './PhotoUploader';
 import ActionButton from './ActionButton';
 import { Camera, Send } from 'lucide-react';
-import { getInitialMessages, getResponseForAction } from '@/utils/chatMessages';
+import { getInitialMessages, getResponseForAction, getCustomBudgetResponse, getCustomThemeResponse } from '@/utils/chatMessages';
+import { toast } from '@/hooks/use-toast';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,7 +13,8 @@ const ChatBot = () => {
   const [inputValue, setInputValue] = useState('');
   const [awaitingCameraCapture, setAwaitingCameraCapture] = useState(false);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
-  const [clothingPhoto, setClothingPhoto] = useState<string | null>(null);
+  const [awaitingBudgetInput, setAwaitingBudgetInput] = useState(false);
+  const [awaitingThemeInput, setAwaitingThemeInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -30,6 +31,19 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Effect for shimmer animation when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      const chatContainer = document.querySelector('.chat-container');
+      if (chatContainer) {
+        chatContainer.classList.add('animate-scale-up');
+        setTimeout(() => {
+          chatContainer.classList.remove('animate-scale-up');
+        }, 500);
+      }
+    }
+  }, [isOpen]);
+
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -42,7 +56,12 @@ const ChatBot = () => {
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
-      // Add a fallback message if camera access fails
+      toast({
+        title: "Camera Access Error",
+        description: "I couldn't access your camera. Please make sure you've given permission for camera access.",
+        variant: "destructive"
+      });
+      
       addBotMessage({
         id: Date.now().toString(),
         content: "I couldn't access your camera. Please make sure you've given permission for camera access.",
@@ -106,14 +125,20 @@ const ChatBot = () => {
   const handleActionClick = (action: string) => {
     // Add a slight delay to simulate processing
     setTimeout(() => {
-      if (action === 'TAKE_PHOTO' || action === 'LIVE_EXPERIENCE') {
+      if (action === 'TAKE_PHOTO') {
         addBotMessage(getResponseForAction(action));
         startCamera();
       } else if (action === 'CAPTURE_PHOTO') {
         capturePhoto();
+      } else if (action === 'CUSTOM_BUDGET') {
+        setAwaitingBudgetInput(true);
+        addBotMessage(getResponseForAction(action));
+      } else if (action === 'CUSTOM_THEME') {
+        setAwaitingThemeInput(true);
+        addBotMessage(getResponseForAction(action));
       } else {
         // Handle all other actions
-        addBotMessage(getResponseForAction(action, userPhoto || undefined, clothingPhoto || undefined));
+        addBotMessage(getResponseForAction(action, userPhoto || undefined));
       }
     }, 500);
   };
@@ -129,65 +154,69 @@ const ChatBot = () => {
       timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
     
-    // Check for specific user messages
-    const lowerCaseInput = inputValue.toLowerCase();
-    
-    if (lowerCaseInput.includes('blue jean') && lowerCaseInput.includes('already have')) {
+    // Handle special input cases
+    if (awaitingBudgetInput) {
+      setAwaitingBudgetInput(false);
       setTimeout(() => {
-        addBotMessage(getResponseForAction('HAVE_JEANS'));
+        // Format the budget if it doesn't start with ₹
+        const formattedBudget = inputValue.startsWith('₹') ? inputValue : `₹${inputValue}`;
+        addBotMessage(getCustomBudgetResponse(formattedBudget));
       }, 1000);
-    } else if (lowerCaseInput.includes('budget')) {
+    } else if (awaitingThemeInput) {
+      setAwaitingThemeInput(false);
       setTimeout(() => {
-        addBotMessage({
-          id: Date.now().toString(),
-          content: "Planning an outing or event? I can style you from head to toe within your budget!",
-          sender: 'bot',
-          timestamp: new Date(),
-          actions: [
-            {
-              id: 'budget-1000',
-              label: "₹1000",
-              action: 'BUDGET_1000'
-            },
-            {
-              id: 'budget-2000',
-              label: "₹2000",
-              action: 'BUDGET_2000'
-            },
-            {
-              id: 'budget-5000',
-              label: "₹5000",
-              action: 'BUDGET_5000'
-            }
-          ]
-        });
+        addBotMessage(getCustomThemeResponse(inputValue));
       }, 1000);
     } else {
-      // Default response
-      setTimeout(() => {
-        const defaultResponse: MessageType = {
-          id: Date.now().toString(),
-          content: "I hear you! Let me help you with that. Would you like to see some outfit suggestions?",
-          sender: 'bot',
-          timestamp: new Date(),
-          actions: [
-            {
-              id: 'explore-more',
-              label: "Show me outfits",
-              action: 'EXPLORE_SIMILAR'
-            },
-            {
-              id: 'accessories',
-              label: "Show accessories",
-              action: 'MATCH_ACCESSORIES'
-            }
-          ]
-        };
-        addBotMessage(defaultResponse);
-      }, 1000);
+      // Handle regular chat messages
+      const lowerCaseInput = inputValue.toLowerCase();
+      
+      if (lowerCaseInput.includes('blue jean') || lowerCaseInput.includes('jeans')) {
+        setTimeout(() => {
+          addBotMessage(getResponseForAction('HAVE_JEANS'));
+        }, 1000);
+      } else if (lowerCaseInput.includes('budget')) {
+        setTimeout(() => {
+          addBotMessage(getResponseForAction('BUDGET_STYLING'));
+        }, 1000);
+      } else if (lowerCaseInput.includes('wedding') || lowerCaseInput.includes('party') || 
+                lowerCaseInput.includes('date') || lowerCaseInput.includes('occasion')) {
+        setTimeout(() => {
+          addBotMessage(getResponseForAction('THEME_BASED'));
+        }, 1000);
+      } else {
+        // Default response
+        setTimeout(() => {
+          const defaultResponse: MessageType = {
+            id: Date.now().toString(),
+            content: "I hear you! Let me help you with that. What would you like to focus on?",
+            sender: 'bot',
+            timestamp: new Date(),
+            actions: [
+              {
+                id: 'take-photo',
+                label: "Take a picture now",
+                action: 'TAKE_PHOTO'
+              },
+              {
+                id: 'budget',
+                label: "Style within my budget",
+                action: 'BUDGET_STYLING'
+              },
+              {
+                id: 'theme',
+                label: "Style me for an occasion",
+                action: 'THEME_BASED'
+              }
+            ]
+          };
+          addBotMessage(defaultResponse);
+        }, 1000);
+      }
     }
+    
+    setInputValue('');
   };
 
   const addBotMessage = (message: MessageType) => {
@@ -196,7 +225,7 @@ const ChatBot = () => {
 
   return (
     <ChatBubble isOpen={isOpen} onToggle={toggleChat}>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full chat-container">
         <div className="flex-1 overflow-y-auto p-4">
           {messages.map((message) => (
             <MessageItem
@@ -229,7 +258,7 @@ const ChatBot = () => {
                   </button>
                 </div>
                 <p className="absolute top-2 left-0 right-0 text-center text-white text-xs bg-black/50 py-1">
-                  Your picture is not stored or misused
+                  Don't worry! Your picture is not stored or misused.
                 </p>
               </div>
             </div>
@@ -241,7 +270,9 @@ const ChatBot = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Type your message..."
+              placeholder={awaitingBudgetInput ? "Enter your budget (e.g., ₹3500)" : 
+                          awaitingThemeInput ? "Enter the occasion (e.g., Birthday Party)" : 
+                          "Type your message..."}
               className="flex-1 px-4 py-2 rounded-full border border-huemate-gold/30 focus:outline-none focus:border-huemate-gold/50 focus:ring-1 focus:ring-huemate-gold/30 bg-white/80"
             />
             <ActionButton
