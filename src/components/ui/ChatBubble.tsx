@@ -40,7 +40,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
                 <X className="w-5 h-5 text-huemate-dark" />
               </button>
             </div>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden relative">
               {children}
             </div>
           </div>
@@ -48,7 +48,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       ) : (
         <button
           onClick={onToggle}
-          className="w-28 h-28 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 overflow-hidden animate-subtle-shimmer"
+          className="w-20 h-20 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 overflow-hidden animate-subtle-shimmer"
         >
           <img 
             src="/lovable-uploads/e7c7a034-8f23-408d-89b4-7d447102a958.png" 

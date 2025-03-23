@@ -1,18 +1,31 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import ChatBubble from './ui/ChatBubble';
-import MessageItem, { MessageType } from './MessageItem';
-import ActionButton from './ActionButton';
-import { Camera, Send } from 'lucide-react';
-import { getInitialMessages, getResponseForAction, getCustomBudgetResponse, getCustomThemeResponse } from '@/utils/chatMessages';
+import ChatInterface from './ChatInterface';
+import { MessageType } from './MessageItem';
+import SkinToneAnalyzer from './SkinToneAnalyzer';
+import GenderSelection from './GenderSelection';
+import BodyShapeSelection from './BodyShapeSelection';
+import { Camera } from 'lucide-react';
+import { 
+  getWelcomeMessages, 
+  createBotMessage, 
+  createUserMessage,
+  getPersonalizedGreeting,
+  getSkinToneDescription,
+  getBudgetStylingResponse,
+  getThemeBasedResponse
+} from '@/utils/chatUtils';
 import { toast } from '@/hooks/use-toast';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<MessageType[]>(getInitialMessages());
+  const [messages, setMessages] = useState<MessageType[]>(getWelcomeMessages());
   const [inputValue, setInputValue] = useState('');
   const [awaitingCameraCapture, setAwaitingCameraCapture] = useState(false);
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
+  const [skinTone, setSkinTone] = useState<string | null>(null);
+  const [gender, setGender] = useState<string | null>(null);
+  const [bodyShape, setBodyShape] = useState<string | null>(null);
   const [awaitingBudgetInput, setAwaitingBudgetInput] = useState(false);
   const [awaitingThemeInput, setAwaitingThemeInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -23,15 +36,6 @@ const ChatBot = () => {
     setIsOpen(!isOpen);
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Effect for shimmer animation when chat opens
   useEffect(() => {
     if (isOpen) {
       const chatContainer = document.querySelector('.chat-container');
@@ -53,6 +57,9 @@ const ChatBot = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setAwaitingCameraCapture(true);
+        
+        const userMessage = createUserMessage("I'd like to take a photo");
+        setMessages(prev => [...prev, userMessage]);
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
@@ -62,19 +69,18 @@ const ChatBot = () => {
         variant: "destructive"
       });
       
-      addBotMessage({
-        id: Date.now().toString(),
-        content: "I couldn't access your camera. Please make sure you've given permission for camera access.",
-        sender: 'bot',
-        timestamp: new Date(),
-        actions: [
-          {
-            id: 'try-again',
-            label: "Try again",
-            action: 'TAKE_PHOTO'
-          }
-        ]
-      });
+      addBotMessage(
+        createBotMessage(
+          "I couldn't access your camera. Please make sure you've given permission for camera access.",
+          [
+            {
+              id: 'try-again',
+              label: "Try again",
+              action: 'TAKE_PHOTO'
+            }
+          ]
+        )
+      );
     }
   };
 
@@ -83,20 +89,16 @@ const ChatBot = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
-      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
-      // Draw video frame to canvas
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Convert canvas to data URL
         const photoUrl = canvas.toDataURL('image/jpeg');
         setUserPhoto(photoUrl);
         
-        // Stop all video streams
         const stream = video.srcObject as MediaStream;
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
@@ -104,41 +106,335 @@ const ChatBot = () => {
         video.srcObject = null;
         setAwaitingCameraCapture(false);
         
-        // Add user message with the photo
-        const userMessage: MessageType = {
-          id: Date.now().toString(),
-          content: "Here's my photo!",
-          sender: 'user',
-          timestamp: new Date(),
-          image: photoUrl
-        };
+        const userMessage = createUserMessage("Here's my photo!", photoUrl);
         setMessages(prev => [...prev, userMessage]);
         
-        // Simulate processing time
         setTimeout(() => {
-          addBotMessage(getResponseForAction('CAPTURE_PHOTO', photoUrl));
-        }, 1000);
+          const tones = ["warm", "cool", "neutral"];
+          const analyzedTone = tones[Math.floor(Math.random() * tones.length)];
+          setSkinTone(analyzedTone);
+          
+          const skinToneResponse = createBotMessage(
+            `Got it! I've analyzed your photo. ${getSkinToneDescription(analyzedTone)}`,
+            [
+              {
+                id: 'continue-gender',
+                label: "Continue",
+                action: 'SELECT_GENDER'
+              }
+            ]
+          );
+          addBotMessage(skinToneResponse);
+        }, 1500);
       }
     }
   };
 
-  const handleActionClick = (action: string) => {
-    // Add a slight delay to simulate processing
+  const handleGenderSelection = (selectedGender: string) => {
+    setGender(selectedGender);
+    
+    const userMessage = createUserMessage(`I identify as ${selectedGender}`);
+    setMessages(prev => [...prev, userMessage]);
+    
+    const greeting = getPersonalizedGreeting(selectedGender);
+    
     setTimeout(() => {
-      if (action === 'TAKE_PHOTO') {
-        addBotMessage(getResponseForAction(action));
-        startCamera();
-      } else if (action === 'CAPTURE_PHOTO') {
-        capturePhoto();
-      } else if (action === 'CUSTOM_BUDGET') {
-        setAwaitingBudgetInput(true);
-        addBotMessage(getResponseForAction(action));
-      } else if (action === 'CUSTOM_THEME') {
-        setAwaitingThemeInput(true);
-        addBotMessage(getResponseForAction(action));
-      } else {
-        // Handle all other actions
-        addBotMessage(getResponseForAction(action, userPhoto || undefined));
+      const response = createBotMessage(
+        greeting,
+        [
+          {
+            id: 'select-body-shape',
+            label: "Next: Select body shape",
+            action: 'SELECT_BODY_SHAPE'
+          }
+        ]
+      );
+      addBotMessage(response);
+    }, 1000);
+  };
+
+  const handleBodyShapeSelection = (shape: string) => {
+    setBodyShape(shape);
+    
+    const userMessage = createUserMessage(`My body shape is ${shape}`);
+    setMessages(prev => [...prev, userMessage]);
+    
+    setTimeout(() => {
+      const response = createBotMessage(
+        "Ahhh! I'm already visualizing a STUNNING look for you. What would you like to do next?",
+        [
+          {
+            id: 'budget-styling',
+            label: "Style within my budget",
+            action: 'BUDGET_STYLING'
+          },
+          {
+            id: 'theme-based',
+            label: "Style for an occasion",
+            action: 'THEME_BASED'
+          },
+          {
+            id: 'complete-outfit',
+            label: "Complete my look",
+            action: 'COMPLETE_OUTFIT'
+          }
+        ]
+      );
+      addBotMessage(response);
+    }, 1000);
+  };
+
+  const handleActionClick = (action: string) => {
+    setTimeout(() => {
+      switch(action) {
+        case 'START_STYLING':
+          addBotMessage(
+            createBotMessage(
+              "Let's get started! First, I'll need to take a quick photo to analyze your skin tone. Ready?",
+              [
+                {
+                  id: 'take-photo',
+                  label: "Take a photo now",
+                  action: 'TAKE_PHOTO'
+                }
+              ]
+            )
+          );
+          break;
+        
+        case 'HOW_IT_WORKS':
+          addBotMessage(
+            createBotMessage(
+              "I'm HueMate, your AI Fashion Stylist! I'll help you find the perfect shades, fabrics, and outfits that match your unique personality and skin tone. I'll analyze your photo (which is never stored!), ask about your body shape and style preferences, and then suggest personalized outfits!",
+              [
+                {
+                  id: 'get-started',
+                  label: "Let's get started!",
+                  action: 'START_STYLING'
+                }
+              ]
+            )
+          );
+          break;
+        
+        case 'TAKE_PHOTO':
+          startCamera();
+          break;
+        
+        case 'SELECT_GENDER':
+          addBotMessage(
+            createBotMessage(
+              "To personalize your experience, could you tell me your gender?",
+              []
+            )
+          );
+          break;
+        
+        case 'SELECT_BODY_SHAPE':
+          addBotMessage(
+            createBotMessage(
+              "To make it even better, could you tell me your body shape?",
+              []
+            )
+          );
+          break;
+        
+        case 'BUDGET_STYLING':
+          setAwaitingBudgetInput(true);
+          addBotMessage(
+            createBotMessage(
+              "Great! What's your budget for this outfit?",
+              []
+            )
+          );
+          break;
+        
+        case 'THEME_BASED':
+          setAwaitingThemeInput(true);
+          addBotMessage(
+            createBotMessage(
+              "Exciting! What occasion are you dressing up for?",
+              []
+            )
+          );
+          break;
+        
+        case 'COMPLETE_OUTFIT':
+          addBotMessage(
+            createBotMessage(
+              "Based on your skin tone and body shape, here are some outfit recommendations that will look stunning on you!",
+              [
+                {
+                  id: 'more-outfits',
+                  label: "Show me more options",
+                  action: 'MORE_OUTFITS'
+                },
+                {
+                  id: 'finalize',
+                  label: "I love this outfit!",
+                  action: 'FINALIZE_OUTFIT'
+                }
+              ],
+              undefined,
+              {
+                type: "Recommended Outfits",
+                items: [
+                  {
+                    id: "outfit1",
+                    name: "Casual Chic",
+                    image: "/placeholder.svg"
+                  },
+                  {
+                    id: "outfit2",
+                    name: "Business Casual",
+                    image: "/placeholder.svg"
+                  }
+                ]
+              }
+            )
+          );
+          break;
+        
+        case 'MORE_OUTFITS':
+        case 'MORE_BUDGET_OPTIONS':
+        case 'MORE_THEME_OPTIONS':
+          addBotMessage(
+            createBotMessage(
+              "Here are some more options I think would look amazing on you!",
+              [
+                {
+                  id: 'more',
+                  label: "Show me more",
+                  action: 'MORE_OUTFITS'
+                },
+                {
+                  id: 'finalize',
+                  label: "I love this outfit!",
+                  action: 'FINALIZE_OUTFIT'
+                }
+              ],
+              undefined,
+              {
+                type: "More Outfit Options",
+                items: [
+                  {
+                    id: "outfit3",
+                    name: "Evening Elegance",
+                    image: "/placeholder.svg"
+                  },
+                  {
+                    id: "outfit4",
+                    name: "Weekend Casual",
+                    image: "/placeholder.svg"
+                  }
+                ]
+              }
+            )
+          );
+          break;
+        
+        case 'FINALIZE_OUTFIT':
+          addBotMessage(
+            createBotMessage(
+              "OMG, you're about to slay in this fit! 🔥 Can't wait to see you rock it. Don't forget to tag me when you do! 💅",
+              [
+                {
+                  id: 'save',
+                  label: "Save This Outfit",
+                  action: 'SAVE_OUTFIT'
+                },
+                {
+                  id: 'another',
+                  label: "Find Me Another",
+                  action: 'START_OVER'
+                }
+              ]
+            )
+          );
+          break;
+        
+        case 'SAVE_OUTFIT':
+          addBotMessage(
+            createBotMessage(
+              "Your outfit has been saved! Would you like to try on another style or are we done for today?",
+              [
+                {
+                  id: 'another',
+                  label: "Try another style",
+                  action: 'START_OVER'
+                },
+                {
+                  id: 'done',
+                  label: "I'm done for now",
+                  action: 'END_SESSION'
+                }
+              ]
+            )
+          );
+          break;
+        
+        case 'START_OVER':
+          setUserPhoto(null);
+          addBotMessage(
+            createBotMessage(
+              "Let's find you another stunning outfit! What would you like to focus on?",
+              [
+                {
+                  id: 'budget',
+                  label: "Style within my budget",
+                  action: 'BUDGET_STYLING'
+                },
+                {
+                  id: 'theme',
+                  label: "Style for an occasion",
+                  action: 'THEME_BASED'
+                },
+                {
+                  id: 'complete',
+                  label: "Complete my look",
+                  action: 'COMPLETE_OUTFIT'
+                }
+              ]
+            )
+          );
+          break;
+        
+        case 'END_SESSION':
+          addBotMessage(
+            createBotMessage(
+              "Alright babe! Have a fab day and keep slaying! 💄✨ Come back anytime for more style advice!",
+              [
+                {
+                  id: 'restart',
+                  label: "Start Over",
+                  action: 'FULL_RESTART'
+                }
+              ]
+            )
+          );
+          break;
+        
+        case 'FULL_RESTART':
+          setUserPhoto(null);
+          setSkinTone(null);
+          setGender(null);
+          setBodyShape(null);
+          setMessages(getWelcomeMessages());
+          break;
+          
+        default:
+          addBotMessage(
+            createBotMessage(
+              "I'm not sure what to do with that. Would you like to start over?",
+              [
+                {
+                  id: 'restart',
+                  label: "Start Over",
+                  action: 'FULL_RESTART'
+                }
+              ]
+            )
+          );
       }
     }, 500);
   };
@@ -146,72 +442,83 @@ const ChatBot = () => {
   const handleSendMessage = () => {
     if (inputValue.trim() === '') return;
     
-    // Add user message
-    const userMessage: MessageType = {
-      id: Date.now().toString(),
-      content: inputValue,
-      sender: 'user',
-      timestamp: new Date()
-    };
+    const userMessage = createUserMessage(inputValue);
     setMessages(prev => [...prev, userMessage]);
     
-    // Handle special input cases
     if (awaitingBudgetInput) {
       setAwaitingBudgetInput(false);
       setTimeout(() => {
-        // Format the budget if it doesn't start with ₹
         const formattedBudget = inputValue.startsWith('₹') ? inputValue : `₹${inputValue}`;
-        addBotMessage(getCustomBudgetResponse(formattedBudget));
+        addBotMessage(getBudgetStylingResponse(formattedBudget));
       }, 1000);
     } else if (awaitingThemeInput) {
       setAwaitingThemeInput(false);
       setTimeout(() => {
-        addBotMessage(getCustomThemeResponse(inputValue));
+        addBotMessage(getThemeBasedResponse(inputValue));
       }, 1000);
     } else {
-      // Handle regular chat messages
       const lowerCaseInput = inputValue.toLowerCase();
       
       if (lowerCaseInput.includes('blue jean') || lowerCaseInput.includes('jeans')) {
         setTimeout(() => {
-          addBotMessage(getResponseForAction('HAVE_JEANS'));
+          addBotMessage(
+            createBotMessage(
+              "Got it! I'll style your blue jeans with a trendy white shirt and gold accessories. One sec!",
+              [
+                {
+                  id: 'show-jean-outfit',
+                  label: "Show me the outfit",
+                  action: 'SHOW_JEAN_OUTFIT'
+                }
+              ]
+            )
+          );
         }, 1000);
       } else if (lowerCaseInput.includes('budget')) {
         setTimeout(() => {
-          addBotMessage(getResponseForAction('BUDGET_STYLING'));
+          setAwaitingBudgetInput(true);
+          addBotMessage(
+            createBotMessage(
+              "Great! What's your budget for this outfit?",
+              []
+            )
+          );
         }, 1000);
       } else if (lowerCaseInput.includes('wedding') || lowerCaseInput.includes('party') || 
                 lowerCaseInput.includes('date') || lowerCaseInput.includes('occasion')) {
         setTimeout(() => {
-          addBotMessage(getResponseForAction('THEME_BASED'));
+          setAwaitingThemeInput(true);
+          addBotMessage(
+            createBotMessage(
+              "Exciting! What occasion are you dressing up for?",
+              []
+            )
+          );
         }, 1000);
       } else {
-        // Default response
         setTimeout(() => {
-          const defaultResponse: MessageType = {
-            id: Date.now().toString(),
-            content: "I hear you! Let me help you with that. What would you like to focus on?",
-            sender: 'bot',
-            timestamp: new Date(),
-            actions: [
-              {
-                id: 'take-photo',
-                label: "Take a picture now",
-                action: 'TAKE_PHOTO'
-              },
-              {
-                id: 'budget',
-                label: "Style within my budget",
-                action: 'BUDGET_STYLING'
-              },
-              {
-                id: 'theme',
-                label: "Style me for an occasion",
-                action: 'THEME_BASED'
-              }
-            ]
-          };
-          addBotMessage(defaultResponse);
+          addBotMessage(
+            createBotMessage(
+              "I hear you! Let me help you with that. What would you like to focus on?",
+              [
+                {
+                  id: 'take-photo',
+                  label: "Take a picture now",
+                  action: 'TAKE_PHOTO'
+                },
+                {
+                  id: 'budget',
+                  label: "Style within my budget",
+                  action: 'BUDGET_STYLING'
+                },
+                {
+                  id: 'theme',
+                  label: "Style me for an occasion",
+                  action: 'THEME_BASED'
+                }
+              ]
+            )
+          );
         }, 1000);
       }
     }
@@ -225,66 +532,32 @@ const ChatBot = () => {
 
   return (
     <ChatBubble isOpen={isOpen} onToggle={toggleChat}>
-      <div className="flex flex-col h-full chat-container">
-        <div className="flex-1 overflow-y-auto p-4">
-          {messages.map((message) => (
-            <MessageItem
-              key={message.id}
-              message={message}
-              onActionClick={handleActionClick}
-            />
-          ))}
-          <div ref={messagesEndRef} />
+      <ChatInterface
+        messages={messages}
+        inputValue={inputValue}
+        setInputValue={setInputValue}
+        handleSendMessage={handleSendMessage}
+        onActionClick={handleActionClick}
+        awaitingCameraCapture={awaitingCameraCapture}
+        videoRef={videoRef}
+        canvasRef={canvasRef}
+        capturePhoto={capturePhoto}
+        messagesEndRef={messagesEndRef}
+        awaitingBudgetInput={awaitingBudgetInput}
+        awaitingThemeInput={awaitingThemeInput}
+      />
+      
+      {isOpen && !awaitingCameraCapture && userPhoto && skinTone && !gender && (
+        <div className="absolute bottom-20 left-4 right-4 z-10">
+          <GenderSelection onSelectGender={handleGenderSelection} />
         </div>
-        
-        <div className="p-4 border-t border-huemate-gold/20">
-          {awaitingCameraCapture && (
-            <div className="mb-4">
-              <div className="relative w-full rounded-xl overflow-hidden bg-black">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-64 object-cover"
-                />
-                <canvas ref={canvasRef} className="hidden" />
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                  <button
-                    onClick={capturePhoto}
-                    className="p-3 bg-white rounded-full shadow-lg"
-                  >
-                    <Camera className="w-6 h-6 text-huemate-dark" />
-                  </button>
-                </div>
-                <p className="absolute top-2 left-0 right-0 text-center text-white text-xs bg-black/50 py-1">
-                  Don't worry! Your picture is not stored or misused.
-                </p>
-              </div>
-            </div>
-          )}
-          
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={awaitingBudgetInput ? "Enter your budget (e.g., ₹3500)" : 
-                          awaitingThemeInput ? "Enter the occasion (e.g., Birthday Party)" : 
-                          "Type your message..."}
-              className="flex-1 px-4 py-2 rounded-full border border-huemate-gold/30 focus:outline-none focus:border-huemate-gold/50 focus:ring-1 focus:ring-huemate-gold/30 bg-white/80"
-            />
-            <ActionButton
-              variant="primary"
-              onClick={handleSendMessage}
-              className="rounded-full p-2 h-10 w-10 flex items-center justify-center"
-            >
-              <Send className="w-5 h-5" />
-            </ActionButton>
-          </div>
+      )}
+      
+      {isOpen && !awaitingCameraCapture && userPhoto && skinTone && gender && !bodyShape && (
+        <div className="absolute bottom-20 left-4 right-4 z-10">
+          <BodyShapeSelection gender={gender} onSelectBodyShape={handleBodyShapeSelection} />
         </div>
-      </div>
+      )}
     </ChatBubble>
   );
 };
